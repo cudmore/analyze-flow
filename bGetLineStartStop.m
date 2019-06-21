@@ -41,7 +41,10 @@ function [startColumn,endColumn, pntsPerLine, numLines] = bGetLineStartStop(tifP
     set(gcf, 'Position',  [100, 100, 800, 1400])
     
     showThisNumberOfLines = 1000;
-
+    if showThisNumberOfLines <= numLines
+        showThisNumberOfLines = numLines/2
+    end
+    
     subplot(1,3,2)
     imagesc(imageLinesDC(1:showThisNumberOfLines,:)) % imagesc is image 'scaled colors'
     colormap('gray')

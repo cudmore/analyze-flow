@@ -40,9 +40,10 @@ function AnalyzeFlow(tifPath)
         % The linescan image used in the Figure 9 of the paper named 'fig9im.tif'
         % is located in the same folder as this code. This image can be used as:
         % [angle,utheta,uvar] = hybridvel(imread('fig9im.tif'),1,[],0.47,1,100,25,[1 125]);
-        tifPath = 'exampleData/drew_synthetic.tif';
-        delx = 0.47;
-        delt = 1;
+        
+        %tifPath = 'exampleData/fig9im.tif';
+        %delx = 0.47;
+        %delt = 1;
     end
     
     acqDate = ''; % filled in when using real data

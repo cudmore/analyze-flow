@@ -181,7 +181,7 @@ for ii = 3
         uvar{jj,ii} = allvar(um);
     end
     
-    if showimg
+    if showimg == 1
         
         figChattbar = figure;
         movegui(figChattbar, [800 300]); % specifies distance from bottom left of screen [x,y] ???
