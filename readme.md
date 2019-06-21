@@ -3,7 +3,7 @@
 
 This code is designed to analyze repetitive line scans to extract blood flow. It proceeds in two steps.
 
- 1. In Matlab, Extract flow from raw .tif line scan files and save velocity to .txt files.
+ 1. In Matlab, extract flow from raw .tif line scan files and save velocity to .txt files.
  2. In Python, analyze resultant velocity measurements in .txt files across any number of analyzed files.
 
 ## Algorithms
