@@ -14,14 +14,15 @@ function [startColumn,endColumn, pntsPerLine, numLines] = bGetLineStartStop(tifP
 
     [numLines, pntsPerLine] = size(imageLines);
     
-    %% minus out background signal
-    %disp('DC correction')
+    %
+    % subtract background signal
     DCoffset = sum(imageLines,1) / size(imageLines,1);
     imageLinesDC = imageLines - repmat(DCoffset,size(imageLines,1),1);
 
     [filePath, fileName, fileExt] = fileparts(tifPath);
     
-    %% choose where in the image to process
+    %
+    % choose where in the image to process
     myFigHandle = figure;
     
     subplot(1,3,1)
@@ -53,7 +54,9 @@ function [startColumn,endColumn, pntsPerLine, numLines] = bGetLineStartStop(tifP
     %
     % abb
     subplot(1,3,2) % switch back to plot on left
-    title('Click the left (min) point along x-axis to start analysis');
+    userPrompt = 'Click the left (min) point along x-axis to start analysis';
+    title(userPrompt);
+    disp(userPrompt)
     try
         notGood = 1;
         while notGood
@@ -72,7 +75,9 @@ function [startColumn,endColumn, pntsPerLine, numLines] = bGetLineStartStop(tifP
 
     % abb
     %title('Select the boundaries of the region of interest 2/2');
-    title('Click the right (max) point along x-axis to start analysis');
+    userPrompt = 'Click the right (max) point along x-axis to start analysis';
+    title(userPrompt);
+    disp(userPrompt)
     try
         notGood = 1;
         while notGood

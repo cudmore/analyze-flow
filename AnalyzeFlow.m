@@ -54,6 +54,7 @@ function AnalyzeFlow(tifPath)
 
         % prompt user for .tif file
         if nargin == 0
+            disp('Select a .tif file');
             userDataPath = ['/Users/cudmore/box/data/nathan/20190613/Converted/' '*.tif'];
             [userFile,userPath] = uigetfile(userDataPath);
             if isequal(userFile,0)
@@ -99,9 +100,9 @@ function AnalyzeFlow(tifPath)
     %  Kim settings
     % Ask user for setting 
     
-    % I am old an cannot see, dear matlab ... is it possible to increase your font size???
+    % My eyes are getting old, dear matlab ... is it possible to increase your font size???
     UIControl_FontSize_bak = get(0, 'DefaultUIControlFontSize');
-    set(0, 'DefaultUIControlFontSize', 18);
+    set(0, 'DefaultUIControlFontSize', 16);
 
     str = {'capillary (shiftamt=5)', 'artery (shiftamt=1)', 'user'};
     [speedSetting,v] = listdlg('PromptString','Select a configuration',...

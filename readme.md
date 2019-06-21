@@ -59,6 +59,42 @@ Run the `AnalyzeFlowFolder` script from the Matlab command prompt to analyze all
 Open the `AnalyzeFlow.ipynb` in Python's Jupyter to analyze entire folders of saved velocty .txt files.
 
 
+## AnalyzeFlow Interface
+
+ 1. Run `AnalyzeFlow` at Matlab command prompt
+ 2. Select a .tif image to analyze.
+ 3. `AnalyzeFlow` will display the image. On the left is the full image, in the center is the first 1000 lines, and on the right are the last 1000 lines. Use the mouse pointer and cursors to click the start and then stop points along the x-axis. The position along the y-axis is ignored.
+
+ <IMG SRC="img/analyze-flow-image.png" width=600>
+ 4. Select either 'capillary' or 'artery/vein'. This will set the `shiftamt` parameter for the Kim algorithm. In general arteries have fast flow and capillaries have slow flow.
+ 
+ <IMG SRC="img/analyze-flow-artery-capillary.png" width=300>
+
+ 5. The flow analysis is saved as a `_combined.txt` file in the same folder as the original .tif file.
+
+## AnalyzeFlow output .txt files
+
+The save .txt file looks like the example below. Note, we are only showing 7 velocity measurements from both the Kim and Chhatbar algorithms, there will actually be many more.
+
+These files are easy to load and parse in a number of analysis programs. See the [/python](python]) folder for examples.
+
+| filepath                                                             | file               | acqDate    | acqTime            | analysisDate | analysisTime | pntsPerLine | numLines | delx     | delt     | x1 | x2 | algorithm | k_numavgs | k_skipamt | k_shiftamt | c_hi | c_lineskip | time        | velocity  | 
+|----------------------------------------------------------------------|--------------------|------------|--------------------|--------------|--------------|-------------|----------|----------|----------|----|----|-----------|-----------|-----------|------------|------|------------|-------------|-----------| 
+| /Users/cudmore/box/data/nathan/20190613/Converted/20190613__0020.tif | 20190613__0020.tif | 2019-06-13 | 13:12:57.221-07:00 | 20190619     | 12:27:55     | 42          | 10000    | 0.994369 | 1.530000 | 6  | 37 | kim       | 100       | 25        | 1          | NaN  | NaN        | 38.250000   | -0.672911 | 
+| /Users/cudmore/box/data/nathan/20190613/Converted/20190613__0020.tif | 20190613__0020.tif | 2019-06-13 | 13:12:57.221-07:00 | 20190619     | 12:27:55     | 42          | 10000    | 0.994369 | 1.530000 | 6  | 37 | kim       | 100       | 25        | 1          | NaN  | NaN        | 76.500000   | -0.637624 | 
+| /Users/cudmore/box/data/nathan/20190613/Converted/20190613__0020.tif | 20190613__0020.tif | 2019-06-13 | 13:12:57.221-07:00 | 20190619     | 12:27:55     | 42          | 10000    | 0.994369 | 1.530000 | 6  | 37 | kim       | 100       | 25        | 1          | NaN  | NaN        | 114.750000  | -0.601160 | 
+| /Users/cudmore/box/data/nathan/20190613/Converted/20190613__0020.tif | 20190613__0020.tif | 2019-06-13 | 13:12:57.221-07:00 | 20190619     | 12:27:55     | 42          | 10000    | 0.994369 | 1.530000 | 6  | 37 | kim       | 100       | 25        | 1          | NaN  | NaN        | 153.000000  | -0.579518 | 
+| /Users/cudmore/box/data/nathan/20190613/Converted/20190613__0020.tif | 20190613__0020.tif | 2019-06-13 | 13:12:57.221-07:00 | 20190619     | 12:27:55     | 42          | 10000    | 0.994369 | 1.530000 | 6  | 37 | kim       | 100       | 25        | 1          | NaN  | NaN        | 191.250000  | -0.583120 | 
+| /Users/cudmore/box/data/nathan/20190613/Converted/20190613__0020.tif | 20190613__0020.tif | 2019-06-13 | 13:12:57.221-07:00 | 20190619     | 12:27:55     | 42          | 10000    | 0.994369 | 1.530000 | 6  | 37 | kim       | 100       | 25        | 1          | NaN  | NaN        | 229.500000  | -0.581488 | 
+| /Users/cudmore/box/data/nathan/20190613/Converted/20190613__0020.tif | 20190613__0020.tif | 2019-06-13 | 13:12:57.221-07:00 | 20190619     | 12:27:55     | 42          | 10000    | 0.994369 | 1.530000 | 6  | 37 | kim       | 100       | 25        | 1          | NaN  | NaN        | 267.750000  | -0.592656 | 
+| /Users/cudmore/box/data/nathan/20190613/Converted/20190613__0020.tif | 20190613__0020.tif | 2019-06-13 | 13:12:57.221-07:00 | 20190619     | 12:27:55     | 42          | 10000    | 0.994369 | 1.530000 | 6  | 37 | chhatbar  | NaN       | NaN       | NaN        | 100  | 25         | 1799.280000 | -0.552622 | 
+| /Users/cudmore/box/data/nathan/20190613/Converted/20190613__0020.tif | 20190613__0020.tif | 2019-06-13 | 13:12:57.221-07:00 | 20190619     | 12:27:55     | 42          | 10000    | 0.994369 | 1.530000 | 6  | 37 | chhatbar  | NaN       | NaN       | NaN        | 100  | 25         | 1837.530000 | -0.553482 | 
+| /Users/cudmore/box/data/nathan/20190613/Converted/20190613__0020.tif | 20190613__0020.tif | 2019-06-13 | 13:12:57.221-07:00 | 20190619     | 12:27:55     | 42          | 10000    | 0.994369 | 1.530000 | 6  | 37 | chhatbar  | NaN       | NaN       | NaN        | 100  | 25         | 1875.780000 | -0.531908 | 
+| /Users/cudmore/box/data/nathan/20190613/Converted/20190613__0020.tif | 20190613__0020.tif | 2019-06-13 | 13:12:57.221-07:00 | 20190619     | 12:27:55     | 42          | 10000    | 0.994369 | 1.530000 | 6  | 37 | chhatbar  | NaN       | NaN       | NaN        | 100  | 25         | 1914.030000 | -0.547489 | 
+| /Users/cudmore/box/data/nathan/20190613/Converted/20190613__0020.tif | 20190613__0020.tif | 2019-06-13 | 13:12:57.221-07:00 | 20190619     | 12:27:55     | 42          | 10000    | 0.994369 | 1.530000 | 6  | 37 | chhatbar  | NaN       | NaN       | NaN        | 100  | 25         | 1952.280000 | -0.572237 | 
+| /Users/cudmore/box/data/nathan/20190613/Converted/20190613__0020.tif | 20190613__0020.tif | 2019-06-13 | 13:12:57.221-07:00 | 20190619     | 12:27:55     | 42          | 10000    | 0.994369 | 1.530000 | 6  | 37 | chhatbar  | NaN       | NaN       | NaN        | 100  | 25         | 1990.530000 | -0.617104 | 
+| /Users/cudmore/box/data/nathan/20190613/Converted/20190613__0020.tif | 20190613__0020.tif | 2019-06-13 | 13:12:57.221-07:00 | 20190619     | 12:27:55     | 42          | 10000    | 0.994369 | 1.530000 | 6  | 37 | chhatbar  | NaN       | NaN       | NaN        | 100  | 25         | 2028.780000 | -0.618527 | 
+
 ## Assumptions and important parameters
 
 This analysis assumes that both the scan speed of each line (delt) and the voxel size of each pixel (delx) is known. We use Fiji scripts to read native scope file formats, in particular Olympus OIR files, to extract this information into a .txt file where Matlab cen then read it. The code can be modified to do otherwise.

@@ -48,8 +48,8 @@ dvov = 0.1/100; % dv/v to determine minimum step-size
 firstthetastep = 45; thetarange = [0 179];
 ds = 4; % 4 um streak distance
 
-if exist('showimg','var') && ~isempty(showimg) && showimg, showimg = 1; else showimg = 0; end
-if exist('saveimg','var') && ~isempty(saveimg) && saveimg, saveimg = 1; showimg = 1; else saveimg = 0; end
+%if exist('showimg','var') && ~isempty(showimg) && showimg, showimg = 1; else showimg = 0; end
+%if exist('saveimg','var') && ~isempty(saveimg) && saveimg, saveimg = 1; showimg = 1; else saveimg = 0; end
 if exist('delx','var') && ~isempty(delx) && delx, else delx = 1; end
 if exist('delt','var') && ~isempty(delt) && delt, else delt = 1; end
 if exist('hi','var') && ~isempty(hi) && hi, else hi = imsize(1)-2; end
