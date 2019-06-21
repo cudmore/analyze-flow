@@ -17,7 +17,7 @@ function AnalyzeFlow(tifPath)
     disp(' ');
     disp('====== Starting bAnalyzeFlow ======');
 
-    showOutput = 0; % set to '1' to plot results of both Kim and Chhatbar
+    showOutput = 1; % set to '1' to plot results of both Kim and Chhatbar
     doRealData = 1; % set to '1' for real data, set to data for synthetic/test data
 
     %

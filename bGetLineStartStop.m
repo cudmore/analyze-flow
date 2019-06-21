@@ -25,34 +25,41 @@ function [startColumn,endColumn, pntsPerLine, numLines] = bGetLineStartStop(tifP
     % choose where in the image to process
     myFigHandle = figure;
     
-    subplot(1,3,1)
+    fileName
+    
+    subplot(1,3,1);
     % Kim
     %imagesc(imageLines(1:size(imageLines,2),:)) % imagesc is image 'scaled colors'
     % abb
     %imagesc(imageLines(:,:)) % imagesc is image 'scaled colors'
-    imagesc(imageLinesDC(:,:)) % imagesc is image 'scaled colors'
-    colormap('gray')
+    imagesc(imageLinesDC(:,:)); % imagesc is image 'scaled colors'
+    colormap('gray');
     
     % label axis
     xlabel('Pixels along line');
     ylabel('Line Scans');
     
     % size the figure
-    set(gcf, 'Position',  [100, 100, 800, 1400])
+    set(gcf, 'Position',  [100, 100, 800, 1400]);
     
     showThisNumberOfLines = 1000;
     if showThisNumberOfLines <= numLines
-        showThisNumberOfLines = numLines/2
+        showThisNumberOfLines = numLines/2;
     end
     
-    subplot(1,3,2)
-    imagesc(imageLinesDC(1:showThisNumberOfLines,:)) % imagesc is image 'scaled colors'
-    colormap('gray')
-    title(sprintf('%s',fileName)); % wtf, sprintf is required???
-    
-    subplot(1,3,3)
-    imagesc(imageLinesDC(numLines-showThisNumberOfLines:numLines,:)) % imagesc is image 'scaled colors'
-    colormap('gray')
+    try
+        subplot(1,3,2);
+        imagesc(imageLinesDC(1:showThisNumberOfLines,:)); % imagesc is image 'scaled colors'
+        colormap('gray');
+        title(sprintf('%s',fileName)); % wtf, sprintf is required???
+
+        subplot(1,3,3);
+        imagesc(imageLinesDC(numLines-showThisNumberOfLines:numLines,:)); % imagesc is image 'scaled colors'
+        colormap('gray');
+    catch
+        disp('error displaying subplot ???');
+        %return
+    end
     
     %
     % abb
