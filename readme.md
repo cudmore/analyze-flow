@@ -10,7 +10,7 @@ This code is designed to analyze repetitive line scans to extract blood flow. It
 
 Using algorithms and code from these two references:
 
- - [Kim TN, Goodwill PW, Chen Y, Conolly SM, Schaffer CB, Liepmann D, Wang RA (2012) Line-Scanning Particle Image Velocimetry: An Optical Approach for Quantifying a Wide Range of Blood Flow Speeds in Live Animals Secomb TW, ed. PLoS One 7:e38590.][kim-et-al-2012]
+ - [Kim TN, Goodwill PW, Chen Y, Conolly SM, Schaffer CB, Liepmann D, Wang RA (2012) Line-Scanning Particle Image Velocimetry: An Optical Approach for Quantifying a Wide Range of Blood Flow Speeds in Live Animals. PLoS One 7:e38590.][kim-et-al-2012]
  - [Chhatbar PY, Kara P (2013) Improved blood velocity measurements with a hybrid image filtering and iterative Radon transform algorithm. Front Neurosci 7:106.][chhatbar-and-kara-2013]
 
 [kim-et-al-2012]: https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0038590
