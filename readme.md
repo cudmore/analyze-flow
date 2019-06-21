@@ -76,7 +76,7 @@ Open the `AnalyzeFlow.ipynb` in Python's Jupyter to analyze entire folders of sa
 
 The save .txt file looks like the example below. Note, we are only showing 7 velocity measurements from both the Kim and Chhatbar algorithms, there will actually be many more.
 
-These files are easy to load and parse in a number of analysis programs. See the [python/](python]) folder for examples.
+These files are easy to load and parse in a number of analysis programs. See the [python/](python/) folder for examples.
 
 | filepath                                                             | file               | acqDate    | acqTime            | analysisDate | analysisTime | pntsPerLine | numLines | delx     | delt     | x1 | x2 | algorithm | k_numavgs | k_skipamt | k_shiftamt | c_hi | c_lineskip | time        | velocity  | 
 |----------------------------------------------------------------------|--------------------|------------|--------------------|--------------|--------------|-------------|----------|----------|----------|----|----|-----------|-----------|-----------|------------|------|------------|-------------|-----------| 
