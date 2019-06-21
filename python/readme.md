@@ -1,8 +1,10 @@
 ## Python Jupter notebook to analyze blood flow velocity .txt files
 
+If the .ipynb file does not display on github, try [this nbviwer link](https://nbviewer.jupyter.org/github/cudmore/analyze-flow/blob/master/python/AnalyzeFlow.ipynb).
+
 ### Running
 
-Run this notebook from this folder with `jupyter notebook'
+Run this notebook from this folder with `jupyter notebook`.
 
 ### Requirements
 
