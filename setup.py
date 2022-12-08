@@ -22,13 +22,13 @@ setup(
         'kaleido',  # to save/export from plotly
         #'scipy',
 		#'mplcursors',
-		'requests', #  to load from the cloud (for now github)
+		#'requests', #  to load from the cloud (for now github)
 		#'tables',  # this fails on arm64, neeed 'conda install pytables'
         'scikit-image',
         #'h5py',
-        'pyqtgraph',
-        'PyQt5',
-        'qdarkstyle',
+        #'pyqtgraph',
+        #'PyQt5',
+        #'qdarkstyle',
         'jupyter',
     ],
     # use pip install .[gui]
