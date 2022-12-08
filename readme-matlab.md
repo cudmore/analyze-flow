@@ -8,11 +8,13 @@ This code is designed to analyze repetitive line scans to extract blood flow. It
 
 ## Algorithms
 
-Using algorithms and code from these two references:
+Using algorithms and code from these three references:
 
+ - [Drew at al (2010) Rapid determination of particle velocity from space-time images using the Radon transform. J Comput Neurosci 29(1-2):5-11.][drew-et-al-2010]
  - [Kim TN, Goodwill PW, Chen Y, Conolly SM, Schaffer CB, Liepmann D, Wang RA (2012) Line-Scanning Particle Image Velocimetry: An Optical Approach for Quantifying a Wide Range of Blood Flow Speeds in Live Animals. PLoS One 7:e38590.][kim-et-al-2012]
  - [Chhatbar PY, Kara P (2013) Improved blood velocity measurements with a hybrid image filtering and iterative Radon transform algorithm. Front Neurosci 7:106.][chhatbar-and-kara-2013]
 
+[drew-et-al-2010]: https://pubmed.ncbi.nlm.nih.gov/19459038/
 [kim-et-al-2012]: https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0038590
 [chhatbar-and-kara-2013]: https://www.frontiersin.org/articles/10.3389/fnins.2013.00106/full
 
@@ -36,29 +38,21 @@ Using algorithms and code from these two references:
         
  2. Source line scan files need to be .tif
 
- 3. We need to read two acquisition parameters from each .tif file, the x voxel size along a line scan (delx, um/pixel) and the speed of each line scan (delt, ms/scan). The matlab code assumes you have done this with the Fiji script 'bFolder2MapManager.v0.2_.py'.
+ 3. We need to read two acquisition parameters from each .tif file, the x voxel size along a line scan (delx, um/pixel) and the speed of each line scan (delt, ms/scan).
+ 
+ We are assuming you are working with Olympus oir line scans and have exported them (using the Olympus software) to tif/txt files.
+ 
+ <strike>The matlab code assumes you have done this with the Fiji script 'bFolder2MapManager.v0.2_.py'.
 
 If the Fiji script does not work (e.g. with Olympus kymographs), you need to create a textfile with this informat. For example, for mykymograph.tif, you need to create mykymograph.txt with the following contents
+</strike>
 
-```
-voxelx=
-lineSpeed=
-```
-
-The Matlab code the uses there pareters is her:
-
-```
-delx = str2num(headerStruct.voxelx);
-delt = str2num(headerStruct.lineSpeed);
-```
 ## Running the analysis
-
-Before running matlab code, make sure the output .txt files of Fiji script are all contained in a folder named **oir_headers** inside the folder with the raw .tif files.
 
 At the Matlab prompt, you need to `cd` into the folder with this code, something like
 
 ```
-cd /Users/cudmore/dropbox/flowanalysis
+cd /Users/cudmore/Sites/analyze-flow/matlab
 ```
 
 ### AnalyzeFlow Matlab script
@@ -66,9 +60,11 @@ cd /Users/cudmore/dropbox/flowanalysis
 Run the `AnalyzeFlow` script from the Matlab command prompt to analyze one .tif file.
 
  1. Prompt for a tif file.
+ <strike>
  2. Displays the Tiff and asks user to click start and then stop of analysis along the scanned line (X1, X2).
  3. Asks if it is an Artery (Vein) or capillary. This choice will modify one parameter for the Kim algorithm. Arteries/Veins are fast (shiftamt=1), while capillaries are slow (shiftamt=5).
  4. Perform both Kim and Chhatbar analysis.
+ </strike>
  5. Save all analysis into .txt files.
 
 ### AnalyzeFlowFolder Matlab script
@@ -84,6 +80,8 @@ Open the `AnalyzeFlow.ipynb` in Python's Jupyter to analyze entire folders of sa
 
 
 ## AnalyzeFlow Interface
+
+Dec 2022, we have turned this off for now. There is no prompt when you run `AnalyzeFlow`.
 
  1. Run `AnalyzeFlow` at Matlab command prompt
  2. Select a .tif image to analyze.
@@ -121,7 +119,11 @@ These files are easy to load and parse in a number of analysis programs. See the
 
 ## Assumptions and important parameters
 
-This analysis assumes that both the scan speed of each line (delt) and the voxel size of each pixel (delx) is known. We use Fiji scripts to read native scope file formats, in particular Olympus OIR files, to extract this information into a .txt file where Matlab cen then read it. The code can be modified to do otherwise.
+This analysis assumes that both the scan speed of each line (delt) and the voxel size of each pixel (delx) is known.
+
+<strike>
+We use Fiji scripts to read native scope file formats, in particular Olympus OIR files, to extract this information into a .txt file where Matlab cen then read it. The code can be modified to do otherwise.
+</strike>
 
 The Kim algorithm has parameters and **shiftamt** has to be set for slow (capillaries) and fast (arteries and veins)
 
@@ -152,20 +154,6 @@ lineskip = 25;
  - Figure out how to get more info in analysis (trial grouping, flag a file as bad, ...)
  
  - Get stats working. There seem to be some bad values? Maybe the nan I set when removing outliers (which will be removed in future in preference for 'reject' column.
- 
- ```
-     /usr/local/lib/python3.7/site-packages/scipy/stats/morestats.py:2781: RuntimeWarning:
-
-    invalid value encountered in greater
-
-    /usr/local/lib/python3.7/site-packages/scipy/stats/morestats.py:2782: RuntimeWarning:
-
-    invalid value encountered in less
-
-    /usr/local/lib/python3.7/site-packages/scipy/stats/morestats.py:2778: UserWarning:
-
-    Warning: sample size too small for normal approximation.
-```
 
  - Need to bypass reading Tiff header info from bImPy (too hard to install)
   
