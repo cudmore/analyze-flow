@@ -24,9 +24,14 @@ conda create -y -n flow-env python=3.9
 conda activate flow-env
 ```
 
+Once activated, can be deactivated with `conda deactivate`
+
 4) Install the `analyzeflow` package locally
 
+This will take a minute or two depending on your CPU.
+
 ```
+cd analyze-flow
 pip install -e .
 ```
 
