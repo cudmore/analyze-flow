@@ -569,6 +569,13 @@ class bImp:
 					print('ERROR: unknown sequence type rhs=', rhs)
 					
 			# in ('Galvano', 'Resonant')
+			# nov  2022, is now 'configuration scannerType = Galvano'
+			if line.find('configuration scannerType') != -1:
+				rhs = line.split('= ')[1] # space is intentional
+				rhs = str(rhs)
+				self.scannerType = rhs
+				bPrintLog(line, 3)
+
 			if line.find('configuration scannerType #1') != -1:
 				rhs = line.split('= ')[1] # space is intentional
 				rhs = str(rhs)
