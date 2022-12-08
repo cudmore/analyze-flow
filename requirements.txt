@@ -1,0 +1,9 @@
+pandas
+numpy
+tifffile
+scikit-image  # for radon transform
+jupyter
+matplotlib
+seaborn
+plotly
+kaleido  # to save/export from plotly
