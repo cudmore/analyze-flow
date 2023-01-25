@@ -80,11 +80,35 @@ class kymFlowFile():
         delt = self.delt()
         tifData = self._tifData
 
+        logger.info(f'calling mpAnalyzeFlow() for {self.getFileName()}')
         thetas,the_t,spread_matrix = analyzeflow.kymFlowRadon.mpAnalyzeFlow(tifData,
                                     windowSize,
                                     startPixel=startPixel,
                                     stopPixel=stopPixel)
         
+        doDebugVar = True
+        # need to figure out how to use variance to reject individual velocity measurements
+        if doDebugVar:
+            print('spread_matrix:', spread_matrix.shape, spread_matrix.dtype)
+            
+            # normalize spread matrix?
+            spread_matrix_mean = np.mean(spread_matrix, axis=1)
+            spread_matrix = spread_matrix / spread_matrix_mean[:,None]
+
+            minSpread = np.min(spread_matrix, axis=1)
+            maxSpread = np.max(spread_matrix, axis=1)
+            print('minSpread:', minSpread.shape)
+            print('maxSpread:', maxSpread.shape)
+            print('  min of minSpread:', np.min(minSpread))
+            print('  min of maxSpread:', np.min(maxSpread))
+
+            import matplotlib.pyplot as plt
+            fig, axs = plt.subplots(2, sharex=True)
+            axs[0].plot(the_t * delt, minSpread, 'o')
+            axs[1].plot(the_t * delt, maxSpread, 'o')
+            plt.show()
+            sys.exit(1)
+
         # convert to physical units
         drewTime = the_t * delt
         

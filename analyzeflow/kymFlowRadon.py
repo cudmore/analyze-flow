@@ -118,7 +118,7 @@ def radonWorker(data_hold, angles, angles_fine):
         data: full kymograph
 
     Return:
-        All variables worker_
+        worker_thetas, worker_spread_matrix
     """
     # do in main
     # the_t[k] = 1 + k*stepsize + windowsize/2
@@ -161,7 +161,8 @@ def radonWorker(data_hold, angles, angles_fine):
 
     #return thetas,the_t,spread_matrix
     # return all worker_ variables
-    return worker_thetas, worker_spread_matrix
+    #return worker_thetas, worker_spread_matrix
+    return worker_thetas, worker_spread_matrix_fine
     
 def mpAnalyzeFlow(data : np.ndarray,
                     windowsize : int,
@@ -203,7 +204,7 @@ def mpAnalyzeFlow(data : np.ndarray,
     angles_fine= np.arange(-2, 2+_step, _step)  # [start, stop), step
 
     spread_matrix = np.zeros( (nsteps,len(angles)) )
-    #spread_matrix_fine = np.zeros( (nsteps,len(angles_fine)) )
+    spread_matrix_fine = np.zeros( (nsteps,len(angles_fine)) )
     thetas = np.zeros(nsteps)
 
     #hold_matrix = np.ones( (windowsize,npoints) )
@@ -219,7 +220,6 @@ def mpAnalyzeFlow(data : np.ndarray,
     logger.info(f'  startPixel: {startPixel}')
     logger.info(f'  stopPixel: {stopPixel}')
     logger.info(f'  nsteps: {nsteps}')
-
 
     result_objs = []
     with Pool(processes=os.cpu_count() - 1) as pool:
@@ -246,12 +246,14 @@ def mpAnalyzeFlow(data : np.ndarray,
         for k, results in enumerate(results):
             # results is a tuple
             thetas[k] = results[0]
-            spread_matrix[k] = results[1]
+            #spread_matrix[k] = results[1]
+            spread_matrix_fine[k] = results[1]
 
     stopSec = time.time()
     logger.info(f'  took {round(stopSec-startSec)} seconds')
 
-    return thetas, the_t, spread_matrix
+    #return thetas, the_t, spread_matrix
+    return thetas, the_t, spread_matrix_fine
 
 def compareMatlabPythonRadon():
     """Check if we get a similar answer in Python and Matlab.
@@ -340,21 +342,45 @@ def batchAnalyzeFolder(folderPath):
     """
     
     import analyzeflow
-    
+        
+    if not os.path.isdir(folderPath):
+        print(f'error: batchAnalyzeFolder() did not find folder path: {folderPath}')
+        return
+
     files = os.listdir(folderPath)
     files = sorted(files)
+    
+    # count tif files
+    tifList = []
     for file in files:
         if not file.endswith('.tif'):
             continue
-        tifPath = os.path.join(folderPath, file)
+        tifList.append(file)
+    
+    numTif = len(tifList)
 
+    for idx, tifFile in enumerate(tifList):
+        # if not file.endswith('.tif'):
+        #     continue
+        tifPath = os.path.join(folderPath, tifFile)
+
+        logger.info(f'tif file {idx+1} of {numTif}')
         kff = analyzeflow.kymFlowFile(tifPath)
 
         kff.analyzeFlowWithRadon()  # do actual kym radon analysis
         kff.saveAnalysis()  # save result to csv
 
+    logger.info(f'Done processing {numTif} tif files in folder {folderPath}.')
 
 if __name__ == '__main__':
+    # this one has >>sd in flow, try and figure out variance
+    import analyzeflow
+    tifPath = '/Users/cudmore/Dropbox/data/declan/20221202/Capillary8.tif'
+    kff = analyzeflow.kymFlowFile(tifPath)
+    kff.analyzeFlowWithRadon()  # do actual kym radon analysis
+
+    sys.exit()
+
     # testRadon()
     # sys.exit(1)
 

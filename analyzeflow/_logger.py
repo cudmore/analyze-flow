@@ -94,10 +94,10 @@ def get_logger(name, level=logging.DEBUG):
         f_handler.setLevel(level)
 
         # Create formatters and add it to handlers
-        consoleFormat = '%(levelname)5s %(name)8s  %(filename)s %(funcName)s() line:%(lineno)d -- %(message)s'
+        consoleFormat = '%(levelname)5s %(name)8s %(funcName)s() line:%(lineno)d -- %(message)s'
         c_format = logging.Formatter(consoleFormat)
 
-        fileFormat = '%(asctime)s  %(levelname)5s %(name)8s  %(filename)s %(funcName)s() line:%(lineno)d -- %(message)s'
+        fileFormat = '%(asctime)s  %(levelname)5s %(name)8s %(funcName)s() line:%(lineno)d -- %(message)s'
         f_format = logging.Formatter(fileFormat)
 
         c_handler.setFormatter(c_format)
