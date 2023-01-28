@@ -30,6 +30,7 @@ setup(
         #'PyQt5',
         #'qdarkstyle',
         'jupyter',
+        'mplcursors',
     ],
     # use pip install .[gui]
     # on Big Sur use pip install .\[gui\]

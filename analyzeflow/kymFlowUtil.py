@@ -18,15 +18,24 @@ logger = get_logger(__name__)
 def _removeOutliers(y : np.ndarray) -> np.ndarray:
     """Nan out values +/- 2*std.
     """
-    _mean = np.nanmean(y)
-    _std = np.nanstd(y)
     
-    _greater = y > _mean + 2*_std
-    y[_greater] = float('nan')
+    # trying to fix plotly refresh bug
+    #_y = y.copy()
+    _y = y
+
+    _mean = np.nanmean(_y)
+    _std = np.nanstd(_y)
     
-    _less = y < _mean - 2*_std
-    y[_less] = float('nan')
-    return y
+    _greater = _y > (_mean + 2*_std)
+    _y[_greater] = np.nan #float('nan')
+    
+    _less = _y < (_mean - 2*_std)
+    _y[_less] = np.nan #float('nan')
+
+    # _greaterLess = (_y > (_mean + 2*_std)) | (_y < (_mean - 2*_std))
+    # _y[_greaterLess] = np.nan #float('nan')
+
+    return _y
 
 def old_makeSummaryTable(folderPath : str,
                     timeLimitDict = None,
@@ -111,11 +120,12 @@ def makeSummaryTable_v3(folderPath : str,
                     timeLimitDict = None,
                     removeOutliers = True,
                     medianFilter = 0) -> pd.DataFrame:
-
     """Given a folder, make a summary of all flow analysis.
-    """
-    #parentFolder = os.path.split(folderPath)[1]
+
+    One row per file
     
+    First column is the unique index (dateIndex) for this folder.
+    """    
     files = os.listdir(folderPath)
     files = sorted(files)
     dictList = []
@@ -126,9 +136,12 @@ def makeSummaryTable_v3(folderPath : str,
         kff = analyzeflow.kymFlowFile(oneTifPath)
         oneDict = kff.getReport(removeOutliers=removeOutliers, medianFilter=medianFilter)
         dictList.append(oneDict)
-
+    
     dfSummary = pd.DataFrame(dictList)
-    #display(dfSummary)
+    
+    # insert a column counting files within  this folder
+    dfSummary.insert(loc=0, column='dateIndex', value=range(len(dictList)))
+
     return dfSummary
 
 
@@ -755,7 +768,6 @@ def old_plotFlowAnalysis_v2(tifPath, removeOutliers=True, medianFilter=0):
 
     #
     return fig
-
 
 if __name__ == '__main__':
     folderPath = '/Users/cudmore/Dropbox/data/declan/20221102'

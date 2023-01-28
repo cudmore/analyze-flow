@@ -167,7 +167,8 @@ def radonWorker(data_hold, angles, angles_fine):
 def mpAnalyzeFlow(data : np.ndarray,
                     windowsize : int,
                     startPixel : int = None,
-                    stopPixel : int = None):
+                    stopPixel : int = None,
+                    verbose=False):
     """Given a blood flow kymograph, calculate blood flow velocity.
     
     Args:
@@ -215,11 +216,12 @@ def mpAnalyzeFlow(data : np.ndarray,
     if doDebug:
         nsteps = 100 # debug
     
-    logger.info(f'tif data {data.shape}')
-    logger.info(f'  windowsize: {windowsize}')
-    logger.info(f'  startPixel: {startPixel}')
-    logger.info(f'  stopPixel: {stopPixel}')
-    logger.info(f'  nsteps: {nsteps}')
+    if verbose:
+        logger.info(f'tif data {data.shape}')
+        logger.info(f'  windowsize: {windowsize}')
+        logger.info(f'  startPixel: {startPixel}')
+        logger.info(f'  stopPixel: {stopPixel}')
+        logger.info(f'  nsteps: {nsteps}')
 
     result_objs = []
     with Pool(processes=os.cpu_count() - 1) as pool:
@@ -337,14 +339,17 @@ def old_analyzeOne(tifPath):
 
     return df
 
-def batchAnalyzeFolder(folderPath):
-    """Analyze and save a folder of tif.
+def batchAnalyzeFolder(folderPath) -> int:
+    """Analyze a folder of tif with mpRadon and save all analysis (one line per line scan).
+    
+    Returns:
+        (int) Number of tif files analyzed
     """
     
     import analyzeflow
         
     if not os.path.isdir(folderPath):
-        print(f'error: batchAnalyzeFolder() did not find folder path: {folderPath}')
+        logger.error(f'error: batchAnalyzeFolder() did not find folder path: {folderPath}')
         return
 
     files = os.listdir(folderPath)
@@ -364,13 +369,15 @@ def batchAnalyzeFolder(folderPath):
         #     continue
         tifPath = os.path.join(folderPath, tifFile)
 
-        logger.info(f'tif file {idx+1} of {numTif}')
+        logger.info(f'=== tif file {idx+1} of {numTif}')
         kff = analyzeflow.kymFlowFile(tifPath)
 
         kff.analyzeFlowWithRadon()  # do actual kym radon analysis
         kff.saveAnalysis()  # save result to csv
 
     logger.info(f'Done processing {numTif} tif files in folder {folderPath}.')
+
+    return numTif
 
 if __name__ == '__main__':
     # this one has >>sd in flow, try and figure out variance

@@ -1,5 +1,6 @@
 import os
 import sys
+from datetime import datetime
 import tifffile
 import numpy as np
 import pandas as pd
@@ -18,6 +19,10 @@ class kymFlowFile():
         - analysis results (from radon)
     """
     def __init__(self, tifPath : str, loadTif=True):
+
+        # self._dateAnalyzed = None
+        # self._timeAnalyzed = None
+
         # load tif data
         self._tifPath = tifPath
         self._tifData = None
@@ -30,7 +35,7 @@ class kymFlowFile():
         # load header from txt file
         self._header = analyzeflow.kymFlowUtil._readOlympusHeader(tifPath)
 
-        # load analysis if it exists
+        # load analysis if it exists (this is a csv with one line per line scan)
         self._df = None
         self.loadAnalysis()
 
@@ -69,12 +74,21 @@ class kymFlowFile():
                     ):
         """Analyze flow using Radon transform.
         
+        This generates a pd.DataFrame, one row per line scan.
+        This is what we save.
+
         Args:
             windowSize: must be multiple of 4
         
         Note:
             the speed scales with window size, larger window size is faster
         """
+
+        _analysisVerion = 0.2
+        
+        # TODO:
+        # self._dateAnalyzed = datetime.today().strftime('%Y%m%d')
+        # self._timeAnalyzed = datetime.today().strftime('%H:%M:%S')
 
         delx = self.delx()
         delt = self.delt()
@@ -86,10 +100,11 @@ class kymFlowFile():
                                     startPixel=startPixel,
                                     stopPixel=stopPixel)
         
-        doDebugVar = True
+        doDebugVar = False
         # need to figure out how to use variance to reject individual velocity measurements
         if doDebugVar:
-            print('spread_matrix:', spread_matrix.shape, spread_matrix.dtype)
+            logger.info('=== DEBUG spread_matrix:')
+            print('  shape:', spread_matrix.shape, 'dtype:', spread_matrix.dtype)
             
             # normalize spread matrix?
             spread_matrix_mean = np.mean(spread_matrix, axis=1)
@@ -97,33 +112,67 @@ class kymFlowFile():
 
             minSpread = np.min(spread_matrix, axis=1)
             maxSpread = np.max(spread_matrix, axis=1)
-            print('minSpread:', minSpread.shape)
-            print('maxSpread:', maxSpread.shape)
-            print('  min of minSpread:', np.min(minSpread))
-            print('  min of maxSpread:', np.min(maxSpread))
+            print('  minSpread.shape:', minSpread.shape)
+            print('  maxSpread.shape:', maxSpread.shape)
+            print('    min of minSpread:', np.min(minSpread))
+            print('    min of maxSpread:', np.min(maxSpread))
 
             import matplotlib.pyplot as plt
             fig, axs = plt.subplots(2, sharex=True)
+            
             axs[0].plot(the_t * delt, minSpread, 'o')
+            axs[0].set(ylabel='min spead')
+            
             axs[1].plot(the_t * delt, maxSpread, 'o')
+            axs[1].set(ylabel='max spead')
+            
             plt.show()
             sys.exit(1)
 
         # convert to physical units
         drewTime = the_t * delt
         
+        # convert radians to angle
         _rad = np.deg2rad(thetas)
         drewVelocity = (delx/delt) * np.tan(_rad)
         drewVelocity = drewVelocity / 1000  # mm/s
 
-        # np.tan(90 deg) is returning 1e16 rather than inf
-        tan90 = drewVelocity > 1e6
-        drewVelocity[tan90] = float('nan')
+        # debug, count inf and 0 tan
+        # numZeros = np.count_nonzero(drewVelocity==0)
+        # logger.info(f'  1) numZeros:{numZeros}')
 
-        # create a df
+        # remove inf and 0 tan()
+        # np.tan(90 deg) is returning 1e16 rather than inf
+        tan90or0 = (drewVelocity > 1e6) | (drewVelocity == 0)
+        drewVelocity[tan90or0] = float('nan')
+
+        # debug, count inf and 0 tan
+        # numZeros = np.count_nonzero(drewVelocity==0)
+        # logger.info(f'  2) numZeros:{numZeros}')
+
+        # don't do this here, do it when we call getVelocity() in getReport()
+        # 20230125, check if we have both pos/neg valocities
+        # do this after removing outliers
+        # in our main analysis we have already removed artifacts from usnig tan, e.g. (1e6, 0)
+        # velocityDrew_no_outliers = self.getVelocity(removeOutliers=True, medianFilter=5)
+        # _minVelSign = np.sign(np.nanmin(velocityDrew_no_outliers))
+        # _maxVelSign = np.sign(np.nanmax(velocityDrew_no_outliers))
+        # if _minVelSign != _maxVelSign:
+        #     logger.error(f'  VELOCITY HAS BOTH POS AND NEGATIVE')
+        #     logger.error(f'    file:{self.getFileName()}')
+        #     logger.error(f'    minVel:{np.nanmin(velocityDrew_no_outliers)} maxVel:{np.nanmax(velocityDrew_no_outliers)}')
+        # if self.checkPosNeg():
+        #     logger.warning('')
+
+        #velocityDrew_no_outliers = self.getVelocity(removeOutliers=True, medianFilter=5)
+        velocityDrew_no_outliers = self.getVelocity(removeOutliers=True, medianFilter=5)
+
+        # create a df (saved in saveAnalysis())
         df = pd.DataFrame()
         df['time'] = drewTime
         df['velocity'] = drewVelocity
+        df['cleanVelocity'] = velocityDrew_no_outliers
+        df['absVelocity'] = np.abs(velocityDrew_no_outliers)
         df['parentFolder'] = analyzeflow.kymFlowUtil._getFolderName(self._tifPath)
         df['file'] = self.getFileName()
         df['algorithm'] = 'mpRadon'
@@ -134,19 +183,45 @@ class kymFlowFile():
 
         self._df = df
 
-    def getVelocity(self, removeOutliers=False, medianFilter : int = 0):
+    def checkPosNeg(self):
+        """Check for both positive and negative vel AFTER removing outliers
+        """
+        # 20230125, check if we have both pos/neg valocities
+        # we really need to do this after removing outliers
+        velocityDrew = self.getVelocity(removeOutliers=True, medianFilter=0)
+        _minVelSign = np.sign(np.nanmin(velocityDrew))
+        _maxVelSign = np.sign(np.nanmax(velocityDrew))
+        if _minVelSign != _maxVelSign:
+            logger.warning(f'VELOCITY HAS BOTH POS AND NEGATIVE')
+            logger.warning(f'  file:{self.getFileName()}')
+            logger.warning(f'  minVel:{np.nanmin(velocityDrew)} maxVel:{np.nanmax(velocityDrew)}')
+            return True
+        else:
+            return False
+
+    def getVelocity(self,
+                        removeZero : bool = False,
+                        removeOutliers : bool = False,
+                        medianFilter : int = 0,
+                        absValue : bool = True) -> np.ndarray:
         """Get velocity from analysis.
         """
         velocityDrew = self._df[ self._df['algorithm']=='mpRadon' ]['velocity'].to_numpy()
         
-        velocityDrew = np.abs(velocityDrew)
-        
+        if removeZero:
+            velocityDrew[velocityDrew==0] = np.nan
+
         if removeOutliers:
-            #print('removeOutliers', np.nanmean(velocityDrew))
+            # logger.info(f'  before removeOutliers: {velocityDrew.shape}')
             velocityDrew = analyzeflow.kymFlowUtil._removeOutliers(velocityDrew)
-            #print('  after', np.nanmean(velocityDrew))
+            # logger.info(f'    after removeOutliers: {velocityDrew.shape}')
+
         if medianFilter>0:
             velocityDrew = scipy.signal.medfilt(velocityDrew, medianFilter)
+
+        if absValue:
+            velocityDrew = np.abs(velocityDrew)
+
         return velocityDrew
 
     def getTime(self):
@@ -156,14 +231,18 @@ class kymFlowFile():
         """
         timeDrew = self._df[ self._df['algorithm']=='mpRadon' ]['time'].to_numpy()
         return timeDrew
-
+        
+    #def getReport(self, removeOutliers=True, removeZeros=True, medianFilter=0) -> dict:
     def getReport(self, removeOutliers=True, medianFilter=0) -> dict:
+        """
+        """
 
-        # load tif and get intensity stats
+        # image intensity stats
         tifData = self._tifData
         meanInt = np.mean(tifData)
         minInt = np.min(tifData)
         maxInt = np.max(tifData)
+        rangeInt = maxInt - minInt  # new 20230125
 
         # refine analysis per file
         # if timeLimitDict is not None and file in timeLimitDict.keys():
@@ -173,20 +252,60 @@ class kymFlowFile():
         #     maxTime = timeLimitDict[file]['maxTime']
         #     oneDf = oneDf[ (oneDf['time'] >= minTime) & (oneDf['time'] <= maxTime)]  # seconds
 
+        # count the number of nan in original analysis (nan is from tan of 1e6 or 0)
+        velRaw = self.getVelocity(removeOutliers=False, medianFilter=0)
+        nNanTan = np.count_nonzero(np.isnan(velRaw))
 
-        vel = self.getVelocity(removeOutliers=removeOutliers,medianFilter=medianFilter)
+        vel_no_zero = self.getVelocity(removeZero=True, removeOutliers=True, medianFilter=medianFilter)
+        meanVelNoZero = np.nanmean(vel_no_zero)
+
+        vel_no_abs = self.getVelocity(removeOutliers=removeOutliers, medianFilter=medianFilter, absValue=False)
+        meanVel_no_abs = np.nanmean(vel_no_abs)
+        signMeanVel = np.sign(meanVel_no_abs)
+
+
+        vel = self.getVelocity(removeOutliers=removeOutliers, medianFilter=medianFilter)
+
+        # count the number of zeros and set them to nan
+        # Jan 2023, now that we remove both tan 1e6 and 0, we should never have zeros
+        numZeros = np.count_nonzero(vel==0)
+
         minVel = np.nanmin(vel)
         maxVel = np.nanmax(vel)
         rangeVel = maxVel - minVel
         meanVel = np.nanmean(vel)
+        medianVel = np.nanmedian(vel)
         stdVel = np.nanstd(vel)
         nTotal = len(vel)
-        nNonNan = np.count_nonzero(~np.isnan(vel))
-        nNan = np.count_nonzero(np.isnan(vel))
 
+        # if we have both positive and negative flow (after removing outliers)
+        # we should not have this if we have removed outliers
+        signMin = np.sign(minVel)  # 0 vel will return 0
+        signMax = np.sign(maxVel)
+        #bothPosAndNegative = (signMin != signMax) | not (signMin==0 | signMax==0)
+        if (signMin==0 or signMax==0):
+            bothPosAndNegative = 0
+        elif signMin != signMax:
+            bothPosAndNegative = 1
+        else:
+            bothPosAndNegative = 0
+
+        # remember, we use np.nan when tan(theta) goes to either inf or 0, e.g. >1e6 or ==0
+        # nNan represent both inf and 0 results from tan(theta)
+        nNonNan = np.count_nonzero(~np.isnan(vel))  # after removing outliers
+        
+        # sum of nan from tan and remove outliers
+        nNanFinal = np.count_nonzero(np.isnan(vel))
+
+        nNanOutliers = nNanFinal - nNanTan
+    
         # make a column with parentFolder+'/'+file
         parentFolder = analyzeflow.kymFlowUtil._getFolderName(self._tifPath)
+
         oneDict = {
+            # 'dateAnalyzed': self._dateAnalyzed,
+            # 'timeAnalyzed': self._timeAnalyzed,
+
             'parentFolder': parentFolder,
             'file': self.getFileName(),
             'uniqueFile': parentFolder + '/' + self.getFileName(),
@@ -202,19 +321,34 @@ class kymFlowFile():
             'meanInt': meanInt,
             'minInt': minInt,
             'maxInt': maxInt,
+            'rangeInt': rangeInt,  # new 20230125
             
+            'signMeanVel': signMeanVel,  # new 20230125, sign of the mean velocity (pos/neg is 1/-1)
+            'posNegVel': bothPosAndNegative,  # new 20230125
             'minVel': minVel,
             'maxVel': maxVel,
             'rangeVel': rangeVel,
             'meanVel': meanVel,
+            'medianVel': medianVel,  # added 20230125
             'stdVel': stdVel,
+            'meanVelNoZero': meanVelNoZero,  # added 20230125, mean velocity after remove zero and remove outlier
             'nTotal': nTotal,
             'nNonNan': nNonNan,
-            'nNan': nNan,
+            'nNanTan': nNanTan,  # added 20230125, number of nan from tan()
+            'nNanOutliers': nNanOutliers,  # added 20230125, number of nans generated in remove outliers
+            'nNanFinal': nNanFinal,
+            'percentNanFinal': round(nNanFinal / nTotal * 100, 2),
+            'percentGoodFinal': round(nNonNan / nTotal * 100, 2),
+            'nZero': numZeros,  # added 20230125, will have 0 when (i) the image goes dark or (2) there is actually no flow
+            
         }
         return oneDict
 
     def saveAnalysis(self):
+        """Save analysis to csv.
+        
+        This is one row per line scan.
+        """
         if self._df is None:
             logger.info('no analysis to save')
             return
@@ -228,7 +362,11 @@ class kymFlowFile():
         self._df.to_csv(saveFilePath)
 
     def loadAnalysis(self):
-        # load corresponding csv from python radon analysis
+        """Load corresponding csv from python radon analysis
+
+        This is one line per line-scan
+        """
+
         tifPath = self._tifPath
         loadPath = analyzeflow.kymFlowUtil._getAnalysisPath_v2(tifPath)
         csvFileName = self.getFileName()
