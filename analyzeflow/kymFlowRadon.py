@@ -370,6 +370,8 @@ def batchAnalyzeFolder(folderPath) -> int:
         tifPath = os.path.join(folderPath, tifFile)
 
         logger.info(f'=== tif file {idx+1} of {numTif}')
+        logger.info(f'  path: {tifPath}')
+        
         kff = analyzeflow.kymFlowFile(tifPath)
 
         kff.analyzeFlowWithRadon()  # do actual kym radon analysis

@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='analyzeflow',
-    version='0.0.1',
+    version='0.0.2',  # Feb 06 2023
     description='Analyze blood flow from a kymograph line scan.',
     url='http://github.com/cudmore/Analyze-Flow',
     author='Robert H Cudmore',

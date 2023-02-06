@@ -164,15 +164,17 @@ class kymFlowFile():
         # if self.checkPosNeg():
         #     logger.warning('')
 
+        # feb 6, order matters
         #velocityDrew_no_outliers = self.getVelocity(removeOutliers=True, medianFilter=5)
-        velocityDrew_no_outliers = self.getVelocity(removeOutliers=True, medianFilter=5)
 
+        logger.info(f'  ')
+        
         # create a df (saved in saveAnalysis())
         df = pd.DataFrame()
         df['time'] = drewTime
         df['velocity'] = drewVelocity
-        df['cleanVelocity'] = velocityDrew_no_outliers
-        df['absVelocity'] = np.abs(velocityDrew_no_outliers)
+        # df['cleanVelocity'] = velocityDrew_no_outliers
+        # df['absVelocity'] = np.abs(velocityDrew_no_outliers)
         df['parentFolder'] = analyzeflow.kymFlowUtil._getFolderName(self._tifPath)
         df['file'] = self.getFileName()
         df['algorithm'] = 'mpRadon'
@@ -182,6 +184,11 @@ class kymFlowFile():
         df['pntsPerLine'] = self.pntsPerLine()
 
         self._df = df
+
+        # feb 6, order matters
+        velocityDrew_no_outliers = self.getVelocity(removeOutliers=True, medianFilter=5)
+        self._df['cleanVelocity'] = velocityDrew_no_outliers
+        self._df['absVelocity'] = np.abs(velocityDrew_no_outliers)
 
     def checkPosNeg(self):
         """Check for both positive and negative vel AFTER removing outliers
