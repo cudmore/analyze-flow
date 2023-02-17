@@ -17,8 +17,8 @@ def showScatterPlots(path = None):
     
     # path = '/home/cudmore/Sites/analyze-flow/exampleData/declan-analysis-20230124.csv'    
     # path = '/home/cudmore/Sites/declan-flow-analysis-shared/flowSummary-20230125-v0.csv'
-    path = '/home/cudmore/Sites/declan-flow-analysis-shared/flowSummary-20230127-v2.csv'
-    path = '/home/cudmore/Sites/declan-flow-analysis-shared/flowSummary-20230206_v2 (1).xlsx'
+    _path = '/home/cudmore/Sites/declan-flow-analysis-shared/flowSummary-20230127-v2.csv'
+    _path = '/home/cudmore/Sites/declan-flow-analysis-shared/flowSummary-20230206_v2 (1).xlsx'
 
     if path is None:
         path = '/home/cudmore/Sites/declan-flow-analysis-shared/flowSummary-20230216-rhc-v2.csv'

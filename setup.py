@@ -26,9 +26,9 @@ setup(
 		#'tables',  # this fails on arm64, neeed 'conda install pytables'
         'scikit-image',
         #'h5py',
-        #'pyqtgraph',
-        #'PyQt5',
-        #'qdarkstyle',
+        'pyqtgraph',
+        'PyQt5',
+        'qdarkstyle',
         'jupyter',
         'mplcursors',
         'openpyxl',  # top open xlsx files in pandas
