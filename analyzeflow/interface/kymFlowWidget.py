@@ -326,7 +326,8 @@ def plotFlowAnalysis_v3(tifPath, removeZero=True, removeOutliers=True, medianFil
 
 class kymFlowWidget():
     def __init__(self, folderPath):
-        """
+        """A Jupyter notebook widget.
+        
         Args:
             folderPath: path to folder that holds date folders.
         """

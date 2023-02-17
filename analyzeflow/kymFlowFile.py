@@ -42,6 +42,31 @@ class kymFlowFile():
         self._dfMatlab = None
         self.loadMatlabAnalysis()
 
+    def isKymograph(self):
+        return True
+
+    def getKymographRect(self):
+        logger.error('IMPLEMENT THIS')
+        return
+
+    def resetKymographRect(self):
+        logger.error('IMPLEMENT THIS')
+        return
+
+    def getKymographBackgroundRect(self):
+        logger.error('IMPLEMENT THIS')
+        return
+
+    def _updateTifRoi(Self, theRect):
+        logger.error('IMPLEMENT THIS')
+        return
+
+    @property
+    def recordingDur(self):
+        """Get recording duration in seconds.
+        """
+        return self.delt() * self.numLines()
+
     def getTifCopy(self, doRotate=False):
         if self._tifData is None:
             logger.warning(f'no tif data {self._tifPath}')
@@ -50,6 +75,10 @@ class kymFlowFile():
         if doRotate:
             tifCopy = np.rot90(tifCopy)
         return tifCopy
+
+    @property
+    def tifData(self):
+        return self._tifData
 
     def getFileName(self):
         return os.path.split(self._tifPath)[1]
@@ -168,10 +197,10 @@ class kymFlowFile():
         #velocityDrew_no_outliers = self.getVelocity(removeOutliers=True, medianFilter=5)
 
         logger.info(f'  ')
-        
+
         # create a df (saved in saveAnalysis())
         df = pd.DataFrame()
-        df['time'] = drewTime
+        df['time'] = drewTime  #seconds
         df['velocity'] = drewVelocity
         # df['cleanVelocity'] = velocityDrew_no_outliers
         # df['absVelocity'] = np.abs(velocityDrew_no_outliers)
@@ -210,10 +239,22 @@ class kymFlowFile():
                         removeZero : bool = False,
                         removeOutliers : bool = False,
                         medianFilter : int = 0,
-                        absValue : bool = True) -> np.ndarray:
+                        absValue : bool = True,
+                        startSec = None,
+                        stopSec = None) -> np.ndarray:
         """Get velocity from analysis.
         """
-        velocityDrew = self._df[ self._df['algorithm']=='mpRadon' ]['velocity'].to_numpy()
+        df = self._df
+        
+        # feb 2023, reduce by startSec/stopSec        
+        if startSec is None:
+            startSec = 0 
+        if stopSec is None:
+            stopSec = self.recordingDur
+
+        df = df[ (df['time']>=startSec) & (df['time']<=stopSec) ]
+
+        velocityDrew = df[ df['algorithm']=='mpRadon' ]['velocity'].to_numpy()
         
         if removeZero:
             velocityDrew[velocityDrew==0] = np.nan
@@ -240,7 +281,10 @@ class kymFlowFile():
         return timeDrew
         
     #def getReport(self, removeOutliers=True, removeZeros=True, medianFilter=0) -> dict:
-    def getReport(self, removeOutliers=True, medianFilter=0) -> dict:
+    def getReport(self, removeOutliers=True,
+                    medianFilter=5,
+                    startSec=None,
+                    stopSec=None) -> dict:
         """
         """
 
@@ -260,18 +304,21 @@ class kymFlowFile():
         #     oneDf = oneDf[ (oneDf['time'] >= minTime) & (oneDf['time'] <= maxTime)]  # seconds
 
         # count the number of nan in original analysis (nan is from tan of 1e6 or 0)
-        velRaw = self.getVelocity(removeOutliers=False, medianFilter=0)
+        velRaw = self.getVelocity(removeOutliers=False, medianFilter=0, startSec=startSec, stopSec=stopSec)
         nNanTan = np.count_nonzero(np.isnan(velRaw))
 
-        vel_no_zero = self.getVelocity(removeZero=True, removeOutliers=True, medianFilter=medianFilter)
+        vel_no_zero = self.getVelocity(removeZero=True, removeOutliers=True, medianFilter=medianFilter,
+                                        startSec=startSec, stopSec=stopSec)
         meanVelNoZero = np.nanmean(vel_no_zero)
 
-        vel_no_abs = self.getVelocity(removeOutliers=removeOutliers, medianFilter=medianFilter, absValue=False)
+        vel_no_abs = self.getVelocity(removeOutliers=removeOutliers, medianFilter=medianFilter, absValue=False,
+                                        startSec=startSec, stopSec=stopSec)
         meanVel_no_abs = np.nanmean(vel_no_abs)
         signMeanVel = np.sign(meanVel_no_abs)
 
 
-        vel = self.getVelocity(removeOutliers=removeOutliers, medianFilter=medianFilter)
+        vel = self.getVelocity(removeOutliers=removeOutliers, medianFilter=medianFilter,
+                                    startSec=startSec, stopSec=stopSec)
 
         # count the number of zeros and set them to nan
         # Jan 2023, now that we remove both tan 1e6 and 0, we should never have zeros
@@ -348,6 +395,8 @@ class kymFlowFile():
             'percentGoodFinal': round(nNonNan / nTotal * 100, 2),
             'nZero': numZeros,  # added 20230125, will have 0 when (i) the image goes dark or (2) there is actually no flow
             
+            'aStartSec': startSec,
+            'aStopSec': stopSec,
         }
         return oneDict
 

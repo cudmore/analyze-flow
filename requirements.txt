@@ -8,3 +8,4 @@ seaborn
 plotly
 kaleido  # to save/export from plotly
 mplcursors
+openpyxl  # top open xlsx files in pandas

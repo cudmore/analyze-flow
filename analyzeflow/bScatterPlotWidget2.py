@@ -420,13 +420,27 @@ class myStatListWidget(QtWidgets.QWidget):
         # select a default stat
         self.myTableWidget.selectRow(0) # hard coding 'Spike Frequency (Hz)'
 
+    def _refreshStatList(self, statList : "List[dict]"):
+        self.statList = statList
+
+        self.myTableWidget.setRowCount(len(self.statList))
+
+        for idx, stat in enumerate(self.statList):
+            item = QtWidgets.QTableWidgetItem(stat)
+            self.myTableWidget.setItem(idx, 0, item)
+            self.myTableWidget.setRowHeight(idx, self._rowHeight)
+    
     def getCurrentRow(self):
         return self.myTableWidget.currentRow()
 
     def getCurrentStat(self):
         # assuming single selection
         row = self.getCurrentRow()
-        humanStat = self.myTableWidget.item(row,0).text()
+        _oneItem = self.myTableWidget.item(row,0)
+        if _oneItem is None:
+            return None, None
+        
+        humanStat = _oneItem.text()
 
         # convert from human readbale to backend
         try:
@@ -584,7 +598,11 @@ class myMplCanvas(QtWidgets.QFrame):
 
         todo: this makes perfect sense for scatter but maybe not other plots???
         """
-        logger.info('')
+
+        modifiers = QtWidgets.QApplication.keyboardModifiers()
+        isShift = modifiers == QtCore.Qt.ShiftModifier
+
+        logger.info(f'isShift:{isShift}')
         line = event.artist
 
         # filter out clicks on 'Annotation' used by mplcursors
@@ -607,6 +625,9 @@ class myMplCanvas(QtWidgets.QFrame):
         # to do, just put copy of state dict ???
         selectDict['plotType'] = self.stateDict['plotType']
         selectDict['dataType'] = self.stateDict['dataType']
+
+        selectDict['isShift'] = isShift
+
         #
         # emit
         logger.info(f'  -->> signalSelectFromPlot.emit()')
@@ -783,8 +804,13 @@ class myMplCanvas(QtWidgets.QFrame):
             # re-use our stateDict
             stateDict = self.stateDict
         else:
+            if stateDict is None:
+                return
             self.stateDict = stateDict.copy()
 
+        if stateDict is None:
+            return
+        
         dataType = stateDict['dataType']
         hue = stateDict['hue']
         groupByColumnName = stateDict['groupByColumnName']
@@ -1062,6 +1088,7 @@ class bScatterPlotMainWindow(QtWidgets.QMainWindow):
                     interfaceDefaults=None,
                     masterDf=None,
                     limitToCol=None,  # col like 'epoch' to create popup to limit to one value (like 0)
+                    myApp = None,  # trying to implement quit/exit action
                     parent=None):
         """
         path: full path to .csv file generated with reanalyze
@@ -1083,6 +1110,8 @@ class bScatterPlotMainWindow(QtWidgets.QMainWindow):
         """
         super().__init__(parent)
 
+        self._myAp = myApp
+        
         #self.keepCheckBoxDelegate = myCheckBoxDelegate(None)
 
         if interfaceDefaults is None:
@@ -1096,6 +1125,11 @@ class bScatterPlotMainWindow(QtWidgets.QMainWindow):
         self.mplCursorHover = None
 
         self.buildMenus()
+
+        # created in buildUI() but accessed (as none) on loadPath
+        self.rawTableView = None
+        self.xStatTableView = None
+        self.yStatTableView = None
 
         # assigns self.masterDf
         # if masterDf is not None will use masterDf rather than loading path
@@ -1206,6 +1240,12 @@ class bScatterPlotMainWindow(QtWidgets.QMainWindow):
 
         # self.updatePlotSize() # calls update2()
         self.update2()
+
+    def closeEvent(self, event):
+        """Called when user closes window.
+        """
+        logger.info('see here, we can just quit application')
+        QtCore.QCoreApplication.quit()
 
     def _mySetWindowTitle(self, windowTitle):
         """Required to interact with sanpyPlugin."""
@@ -1423,7 +1463,7 @@ class bScatterPlotMainWindow(QtWidgets.QMainWindow):
         self.xStatTableView = myStatListWidget(myParent=self, headerStr='X-Stat', statList=self.statListDict)
         # oligo
         _defaultXStat = interfaceDefaults['X Statistic']
-        if _defaultXStat is not None:
+        if self.masterDf is not None and (_defaultXStat is not None):
             # find column of Y Statistic
             _colIdx = self.masterDf.columns.get_loc(_defaultXStat)
             self.xStatTableView.myTableWidget.selectRow(_colIdx)
@@ -1435,7 +1475,7 @@ class bScatterPlotMainWindow(QtWidgets.QMainWindow):
         colSpan = 2
         self.yStatTableView = myStatListWidget(myParent=self, headerStr='Y-Stat', statList=self.statListDict)
         _defaultYStat = interfaceDefaults['Y Statistic']
-        if _defaultYStat is not None:
+        if self.masterDf is not None and (_defaultYStat is not None):
             # find column of Y Statistic
             _colIdx = self.masterDf.columns.get_loc(_defaultYStat)
             self.yStatTableView.myTableWidget.selectRow(_colIdx)
@@ -1536,7 +1576,8 @@ class bScatterPlotMainWindow(QtWidgets.QMainWindow):
         self.signalSelectFromPlot.connect(self.rawTableView.slotSelectRow)
         # never switch rawTableView model, dust update column 'include'
         #self.signalMeanModelChange.connect(self.rawTableView.slotSwitchTableModel)
-        self.rawTableView.slotSwitchTableDf(self.masterDf)
+        if self.masterDf is not None:
+            self.rawTableView.slotSwitchTableDf(self.masterDf)
 
         # self.xDf
         # table-view to insert into tab
@@ -1644,7 +1685,8 @@ class bScatterPlotMainWindow(QtWidgets.QMainWindow):
         for i in range(numPlots):
             iCanvas = self.myPlotCanvasList[i]
             iCanvas.signalSelectSquare.connect(self.slotSelectSquare)
-            iCanvas.signalSelectFromPlot.connect(self.slotSelectFromPlot)
+            # feb 2023, I was connecting this twice and was getting 2x calls for each click
+            #iCanvas.signalSelectFromPlot.connect(self.slotSelectFromPlot)
             for j in range(numPlots):
                 #if i==j:
                 #    continue
@@ -1657,7 +1699,7 @@ class bScatterPlotMainWindow(QtWidgets.QMainWindow):
         self.myPlotCanvasList[0].signalSelectSquare.emit(0, None) #slotSelectSquare(0)
 
     def keyPressEvent(self, event):
-        print('keyPressEvent()')
+        logger.info('keyPressEvent()')
         if event.key() == QtCore.Qt.Key_Escape:
             self.cancelSelection()
         elif (event.type() == QtCore.QEvent.KeyPress and
@@ -1667,6 +1709,7 @@ class bScatterPlotMainWindow(QtWidgets.QMainWindow):
         event.accept()
 
     def copySelection2(self):
+        logger.info('')
         dfCopy = None
         if self.xDf is not None:
             dfCopy = self.xDf.copy()
@@ -1713,6 +1756,9 @@ class bScatterPlotMainWindow(QtWidgets.QMainWindow):
 
         used by myMplCanvas.update()
         """
+        if self.masterDf is None:
+            return None
+        
         stateDict = {}
 
         stateDict['dataType'] = self.dataType # ['All spikes', 'File Mean']
@@ -1812,12 +1858,26 @@ class bScatterPlotMainWindow(QtWidgets.QMainWindow):
     '''
 
     def buildMenus(self):
-        loadAction = QtWidgets.QAction('Load database csv', self)
+        loadAction = QtWidgets.QAction('Load Database ...', self)
         loadAction.triggered.connect(self.loadPathMenuAction)
 
-        menubar = self.menuBar()
-        fileMenu = menubar.addMenu('&File')
+        mainMenu = self.menuBar()
+        fileMenu = mainMenu.addMenu('&File')
         fileMenu.addAction(loadAction)
+        fileMenu.addSeparator()
+
+        self.exitAction = QtWidgets.QAction("&Exit", self)
+        self.exitAction.triggered.connect(self.close)
+        # self.exitAction.triggered.connect(self.closeAllWindows)  # closeAllWindows is a QApplication member
+        fileMenu.addAction(self.exitAction)
+
+        # feb 2023 was this
+        # menubar = self.menuBar()
+        # fileMenu = menubar.addMenu('&File')
+        # fileMenu.addAction(loadAction)
+        
+        # fileMenu = menubar.addMenu('&File')
+        # fileMenu.addAction(loadAction)
 
     def loadPathMenuAction(self):
         """
@@ -1826,7 +1886,7 @@ class bScatterPlotMainWindow(QtWidgets.QMainWindow):
         load resultant _master.csv
         """
         logger.info('loadPathMenuAction')
-        fname = QtWidgets.QFileDialog.getOpenFileName(self, 'Open file', '',"csv files (*.csv)")
+        fname = QtWidgets.QFileDialog.getOpenFileName(self, 'Open file', '',"Files (*.csv *.xlsx)")
         fname = fname[0]  # fname is a tuple
         print(f'fname: "{fname}"')
         if os.path.isfile(fname):
@@ -1849,9 +1909,18 @@ class bScatterPlotMainWindow(QtWidgets.QMainWindow):
                 self.masterDf = pd.read_excel(path, header=0, engine='openpyxl') #, dtype={'ABF File': str})
             else:
                 logger.error(f'file type not supported. Expecting csv/xls/xlsx. Path: {path}')
+                self.masterDf = None
+                self.masterDfColumns = None
 
-        logger.info('loaded df {path}')
-        print(self.masterDf.head())
+        if self.masterDf is not None:
+            if 'parentFolder' in self.masterDf.columns:
+                logger.info('setting parentFolder to str')
+                self.masterDf['parentFolder'] = self.masterDf.parentFolder.astype('str')
+
+            logger.info('loaded df {path}')
+            print(self.masterDf.head())
+
+            self.masterDfColumns = self.masterDf.columns.to_list()
 
         # 20210426
         # combine some columns into new encoding
@@ -1872,7 +1941,7 @@ class bScatterPlotMainWindow(QtWidgets.QMainWindow):
 
         #sys.exit()
 
-        self.masterDfColumns = self.masterDf.columns.to_list()
+        # self.masterDfColumns = self.masterDf.columns.to_list()
 
         #
         # try and guess categorical columns
@@ -1896,14 +1965,27 @@ class bScatterPlotMainWindow(QtWidgets.QMainWindow):
             self.masterCatColumns = categoricalList
             self.hueTypes = categoricalList
 
+        # this is shown in X-Stat and Y-Stat table view
+        # # need to update those on load file
         self.statListDict = {}
-        for colStr in self.masterDfColumns:
-            self.statListDict[colStr] = {'yStat': colStr}
+        if self.masterDfColumns is not None:
+            for colStr in self.masterDfColumns:
+                self.statListDict[colStr] = {'yStat': colStr}
 
         # not sure what this was for ???
         # 20210112, put back in if necc
         #self.masterCatColumns = ['Condition', 'File Number', 'Sex', 'Region', 'filename', 'analysisname']
         #self.masterCatColumns = self.categoricalList
+
+        # feb 2023
+        if self.rawTableView is not None:
+            self.rawTableView.slotSwitchTableDf(self.masterDf)
+
+        if self.xStatTableView is not None:
+            self.xStatTableView._refreshStatList(self.statListDict)
+
+        if self.yStatTableView is not None:
+            self.yStatTableView._refreshStatList(self.statListDict)
 
         # todo: put this somewhere better
         self.setWindowTitle(path)
@@ -2244,11 +2326,15 @@ class bScatterPlotMainWindow(QtWidgets.QMainWindow):
         logger.info('')
         updateIndex = self.updatePlot
         if updateIndex is None:
-            logger.info(f'Found no plots to update with self.updatePlot: {self.updatePlot}')
+            logger.warning(f'Found no plots to update with self.updatePlot: {self.updatePlot}')
             self.mySetStatusBar('Please select a plot to update')
             return
 
         state = self.getState()
+
+        if state is None:
+            logger.info('  state was none')
+            return
 
         # update table model
         # Declan 2023 state['meanDf'] is sometimes NOne
@@ -2334,12 +2420,12 @@ class bScatterPlotMainWindow(QtWidgets.QMainWindow):
     '''
 
     def slotSelectFromPlot(self, selectDict):
+        """A point in one of plots was selected, pass this to parent app
         """
-        A point in one of plots was selected
-        pass this to parent app
-        """
-        logger.info('  -->> emit signalSelectFromPlot')
+        logger.info('  -->> emit signalSelectFromPlot ScatterPlotMainWindow !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
         self.signalSelectFromPlot.emit(selectDict)
+
+        self.mySetStatusBar(f"User selected: {selectDict['path']}")
 
     def slotSelectSquare(self, plotNumber, stateDict):
         logger.info(f'plotNumber:{plotNumber}')
@@ -2357,7 +2443,9 @@ class bScatterPlotMainWindow(QtWidgets.QMainWindow):
         logger.info(f'row:{row} clickedIndex:{clickedIndex}')
 
         # select in plot
-        #self._selectInd(row) # !!!! visually, index start at 1
+        for oneCanvas in self.myPlotCanvasList:
+            if oneCanvas is not None:
+                oneCanvas._selectInd(row) # !!!! visually, index start at 1
 
 def test():
     """
@@ -2492,10 +2580,12 @@ def test():
 
     sys.exit(app.exec_())
 
-def testDec2022():
+def test2022():
     import sanpy.interface
     app = QtWidgets.QApplication(sys.argv)
-    df = pd.read_csv('/Users/cudmore/Desktop/tmpDf-20221231.csv')
+    
+    path = '/home/cudmore/Sites/declan-flow-analysis-shared/flowSummary-20230216-rhc.csv'
+    df = pd.read_csv(path)
     ptp = sanpy.interface.plugins.plotToolPool(tmpMasterDf=df)
     ptp.show()
     sys.exit(app.exec_())
@@ -2538,5 +2628,5 @@ def testOligo():
 
 if __name__ == '__main__':
     # test()
-    #testDec2022()
-    testOligo()
+    test2022()
+    #testOligo()

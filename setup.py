@@ -31,6 +31,7 @@ setup(
         #'qdarkstyle',
         'jupyter',
         'mplcursors',
+        'openpyxl',  # top open xlsx files in pandas
     ],
     # use pip install .[gui]
     # on Big Sur use pip install .\[gui\]

@@ -119,22 +119,88 @@ def old_makeSummaryTable(folderPath : str,
 def makeSummaryTable_v3(folderPath : str,
                     timeLimitDict = None,
                     removeOutliers = True,
-                    medianFilter = 0) -> pd.DataFrame:
+                    medianFilter = 0,
+                    master_db_file = None) -> pd.DataFrame:
     """Given a folder, make a summary of all flow analysis.
 
     One row per file
     
     First column is the unique index (dateIndex) for this folder.
+    
+    Args:
+        master_db_file: full path to master db file. We will pull some columns from here (age, sex, genotype, reject)
     """    
+    
+    # copy these columns from master_db_file (one row, e.g. file,  at a time)
+    masterCols = ['Surgery Type', 'Genotype', 'Sex', 'Age',
+                    'Order', 'Direction', 'Depth',
+                    'Quality', 'declanFile',
+                    'startSec', 'stopSec',
+                    'cudmore_notes',
+                    'reject']
+    if master_db_file is not None:
+        dfMaster = pd.read_excel(master_db_file)
+    else:
+        dfMaster = None
+
     files = os.listdir(folderPath)
     files = sorted(files)
     dictList = []
     for file in files:
         if not file.endswith('.tif'):
             continue
+        
+        # load the file and analysis
         oneTifPath = os.path.join(folderPath, file)
         kff = analyzeflow.kymFlowFile(oneTifPath)
-        oneDict = kff.getReport(removeOutliers=removeOutliers, medianFilter=medianFilter)
+        
+        # feb 2023, THIS IS NOT WORKING !!!!!!!!!!!!!!!!!!!!!!!!!!
+        # for the report, we need to use startSec/stopSec columns in dfMaster
+        _startSec = None
+        _stopSec = None
+        if dfMaster is not None:
+            _fileName = file
+            _folder = os.path.split(folderPath)[1]
+            _uniqueFile = _folder + '/' + _fileName
+            _oneFileRow = dfMaster.loc[dfMaster['uniqueFile'] == _uniqueFile]
+            _oneFileRow = _oneFileRow.reset_index()
+            _startSec = _oneFileRow.at[0, 'startSec']  # either np.float64 or np.nan
+            _stopSec = _oneFileRow.at[0, 'stopSec']
+            if np.isnan(_startSec):
+                _startSec = None
+            if np.isnan(_stopSec):
+                _stopSec = None
+            #print(_fileName, '  _startSec:', _startSec, type(_startSec), '_stopSec:', _stopSec, type(_stopSec))
+
+        # generate report
+        oneDict = kff.getReport(removeOutliers=removeOutliers,
+                        medianFilter=medianFilter,
+                        startSec=_startSec,
+                        stopSec=_stopSec)
+        
+        # new feb 2023
+        # look into our master db for additional columns
+        if dfMaster is not None:
+            uniqueFile = oneDict['uniqueFile']
+            oneFileRow = dfMaster.loc[dfMaster['uniqueFile'] == uniqueFile]
+            oneFileRow = oneFileRow.reset_index()
+            #print('oneFileRow:', oneFileRow)
+            for _col in masterCols:
+                # print(_col, oneFileRow.at[0, _col])
+                try:
+                    _currVal = oneFileRow.at[0, _col]
+                    if _col == 'reject':
+                        if str(_currVal) == 'nan':
+                            _currVal = 'No'
+                        _currVal = str(_currVal)
+                        #print(f'"{_currVal}" {type(_currVal)}')
+
+                    oneDict[_col] = _currVal  # 0 is row label (NOT ROW NUMBER/INDEX)
+                except (KeyError) as e:
+                    #logger.error(oneTifPath)
+                    logger.error(f'uniqueFile:{uniqueFile}')
+                    logger.error(f'  did not find key "{_col}" column')
+
         dictList.append(oneDict)
     
     dfSummary = pd.DataFrame(dictList)
@@ -769,7 +835,26 @@ def old_plotFlowAnalysis_v2(tifPath, removeOutliers=True, medianFilter=0):
     #
     return fig
 
+def runPoolTest():
+
+    dm_master_db_file = '../declan-flow-analysis-shared/flowSummary-20230206_v2 (1).xlsx'
+    if not os.path.isfile(dm_master_db_file):
+        print('ERROR: did not find master db file', dm_master_db_file)
+        sys.exit(1)
+        
+    folderPath = '../declan-flow-analysis-shared/data/20230117'
+
+    removeOutliers = True
+    medianFilter = 5
+    oneDf = analyzeflow.kymFlowUtil.makeSummaryTable_v3(folderPath,
+                                removeOutliers=removeOutliers,
+                                medianFilter=medianFilter,
+                                master_db_file=dm_master_db_file)
+
 if __name__ == '__main__':
+    df = runPoolTest()
+    sys.exit(1)
+    
     folderPath = '/Users/cudmore/Dropbox/data/declan/20221102'
     dfFolder = makeSummaryTable_v3(folderPath)
     print(dfFolder)

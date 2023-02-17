@@ -1,5 +1,10 @@
 
 
+## 20230210
+	Going through Declan notes in summary xls file
+
+	TODO: plot image int range to see if it predicts bad velocity?
+	
 ## 20230125
 
 ### TODO (speaking with Declan)
