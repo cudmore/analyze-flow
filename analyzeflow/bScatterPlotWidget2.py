@@ -318,7 +318,7 @@ class myTableView(QtWidgets.QTableView):
         index = int(index)
         '''
         index = ind
-        index -= 1 # !!! MY VISUAL INDEX IN TABLE IS ONE BASED !!!
+        #index -= 1 # !!! MY VISUAL INDEX IN TABLE IS ONE BASED !!!
         column = 0
         modelIndex = self.model().index(index, column)
         self.setCurrentIndex(modelIndex)
