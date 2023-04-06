@@ -35,6 +35,13 @@ class kymFlowFile():
         # load header from txt file
         self._header = analyzeflow.kymFlowUtil._readOlympusHeader(tifPath)
 
+        # 20230404, check we got a valid header
+        if self._header['umPerPixel'] is None or \
+            self._header['secondsPerLine'] is None or \
+                self._header['durImage_sec'] is None:
+                    logger.error(f'did not get a valid header from txt file')
+                    logger.error(f'  tifPath:{tifPath}')
+
         # load analysis if it exists (this is a csv with one line per line scan)
         self._df = None
         self.loadAnalysis()

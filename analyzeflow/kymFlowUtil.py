@@ -317,6 +317,52 @@ def _readOlympusHeader(tifPath):
             "Image Size"	"38 * 30000 [pixel]"
 
             "Bits/Pixel"	"12 [bits]"
+
+        20230404
+
+        "[General]"	""
+        "Name"	"Live"
+        "Scan Mode"	"XT"
+        "Date"	"04/04/2023 02:01:15.183 PM"
+        "System Name"	"FVMPE-RS"
+        "System Version"	"2.3.2.169"
+        "[Image]"	""
+        "Primary Dimensions"	"X * T"
+        "Image Size"	"37 * 512 [pixel]"
+        "Image Size(Unit Converted)"	"8.140 [um] * 599.040 [ms]"
+        "[Reference Image]"	""
+        "Image Size"	"512 * 512 [pixel]"
+        "Image Size(Unit Converted)"	"112.636 [um] * 112.636 [um]"
+        "[Acquisition]"	""
+        "Objective Lens"	"XLUMPLFLN20XW"
+        "Objective Lens Mag."	"20.0X"
+        "Objective Lens NA"	"1.0"
+        "Scan Device"	"Galvano"
+        "Scan Direction"	"Oneway"
+        "Sampling Speed"	"2.0 [us/pixel]"
+        "Sequential Mode"	"None"
+        "Integration Type"	"None"
+        "Integration Count"	"0"
+        "Region Mode"	"Line"
+        "Find Mode"	"x1"
+        "Rotation"	"0.0 [deg]"
+        "Pan X"	"0.0 [um]"
+        "Pan Y"	"0.0 [um]"
+        "Zoom"	"x5.65"
+        "ADM"	"ADM800"
+        "MirrorTurret 1"	"DMVBOIR"
+        "[Channel 1]"	""
+        "Channel Name"	"RNDD2"
+        "Dye Name"	"Alexa Fluor 488"
+        "Emission WaveLength"	"520 [nm]"
+        "PMT Voltage"	"550 [V]"
+        "BF Name"	"BA495-540"
+        "Emission DM Name"	"SDM570"
+        "Bits/Pixel"	"12 [bits]"
+        "Laser Wavelength"	"920 [nm]"
+        "Laser Transmissivity"	"5.0 [%]"
+        "Laser ND Filter"	"None"
+
     """
 
     txtPath = os.path.splitext(tifPath)[0] + '.txt'
@@ -328,7 +374,7 @@ def _readOlympusHeader(tifPath):
         'dateStr': None,
         'timeStr': None,
         'umPerPixel': None,
-        'secondsPerLine': None,
+        'secondsPerLine': None,  # derived from retDict['durImage_sec'] / retDict['numLines']
         'durImage_sec': None,
         'pixelsPerLine': None,
         'numLines': None,
@@ -386,7 +432,14 @@ def _readOlympusHeader(tifPath):
                 # print('bitsPerPixel:', bitsPerPixel)
                 retDict['bitsPerPixel'] = int(bitsPerPixel)
 
-    retDict['secondsPerLine'] = retDict['durImage_sec'] / retDict['numLines']
+    # april 5, 2023
+    if retDict['durImage_sec'] is None:
+        logger.error(f'did not get durImage_sec')
+    else:
+        retDict['secondsPerLine'] = retDict['durImage_sec'] / retDict['numLines']
+
+    if retDict['umPerPixel'] is None:
+        logger.error(f'did not get umPerPixel')
 
     return retDict
 
