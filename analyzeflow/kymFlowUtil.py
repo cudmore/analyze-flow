@@ -321,7 +321,7 @@ def _readOlympusHeader(tifPath):
 
     txtPath = os.path.splitext(tifPath)[0] + '.txt'
     if not os.path.isfile(txtPath):
-        print(f'error: did not find Olympus header: {txtPath}')
+        logger.error(f'error: did not find Olympus header: {txtPath}')
         return
     
     retDict = {
