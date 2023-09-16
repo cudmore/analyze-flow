@@ -244,12 +244,13 @@ def mpAnalyzeFlow(data : np.ndarray,
         results = [result.get() for result in result_objs]
         #print(len(results))
 
+        # 20230609, i changed lhs from results to result (while working on pymapmanager)
         # return worker_thetas, worker_spread_matrix
-        for k, results in enumerate(results):
+        for k, result in enumerate(results):
             # results is a tuple
-            thetas[k] = results[0]
+            thetas[k] = result[0]
             #spread_matrix[k] = results[1]
-            spread_matrix_fine[k] = results[1]
+            spread_matrix_fine[k] = result[1]
 
     stopSec = time.time()
     logger.info(f'  took {round(stopSec-startSec)} seconds')
