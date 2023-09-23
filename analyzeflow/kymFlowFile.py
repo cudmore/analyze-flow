@@ -18,16 +18,23 @@ class kymFlowFile():
         - tif header
         - analysis results (from radon)
     """
-    def __init__(self, tifPath : str, loadTif=True):
-
-        # self._dateAnalyzed = None
-        # self._timeAnalyzed = None
+    def __init__(self,
+                 tifPath : str = None,
+                 loadTif=True,
+                 ba : "sanpy.bAnalysis" = None):
 
         # load tif data
-        self._tifPath = tifPath
-        self._tifData = None
-        if loadTif:
-            self._tifData = tifffile.imread(tifPath)
+        self._ba = None
+        if ba is not None:
+            self._ba = ba
+            tifPath = ba.fileLoader.filepath
+            self._tifPath = tifPath
+            self._tifData = ba.fileLoader.tifData        
+        else:
+            self._tifPath = tifPath
+            self._tifData = None
+            if loadTif:
+                self._tifData = tifffile.imread(tifPath)
 
         # don't rotate, only for plot, see getTifCopy()
         #self._tifData = np.rot90(self._tifData)  # for plot
@@ -339,6 +346,8 @@ class kymFlowFile():
         stdVel = np.nanstd(vel)
         nTotal = len(vel)
 
+        cvVel = stdVel / meanVel  # added 202309
+
         # if we have both positive and negative flow (after removing outliers)
         # we should not have this if we have removed outliers
         signMin = np.sign(minVel)  # 0 vel will return 0
@@ -367,7 +376,7 @@ class kymFlowFile():
             # 'dateAnalyzed': self._dateAnalyzed,
             # 'timeAnalyzed': self._timeAnalyzed,
 
-            'parentFolder': parentFolder,
+            'parentFolder': parentFolder,  # for Declan this is date
             'file': self.getFileName(),
             'uniqueFile': parentFolder + '/' + self.getFileName(),
 
@@ -392,6 +401,7 @@ class kymFlowFile():
             'meanVel': meanVel,
             'medianVel': medianVel,  # added 20230125
             'stdVel': stdVel,
+            'cvVel': cvVel,
             'meanVelNoZero': meanVelNoZero,  # added 20230125, mean velocity after remove zero and remove outlier
             'nTotal': nTotal,
             'nNonNan': nNonNan,
@@ -405,6 +415,13 @@ class kymFlowFile():
             'aStartSec': startSec,
             'aStopSec': stopSec,
         }
+
+        # get metadata from ba
+        if self._ba is not None:
+            metaDataDict = self._ba.fileLoader.metadata
+            for k,v in metaDataDict.items():
+                oneDict[k] = v
+
         return oneDict
 
     def saveAnalysis(self):
@@ -422,7 +439,46 @@ class kymFlowFile():
         csvFileName = os.path.splitext(csvFileName)[0] + '.csv'
         saveFilePath = os.path.join(savePath, csvFileName)
         logger.info(f'saving: {saveFilePath}')
-        self._df.to_csv(saveFilePath)
+        
+        self._saveHeader(saveFilePath)
+        
+        self._df.to_csv(saveFilePath, index=False, mode='a')
+
+    def _loadHeader(self, path):
+        """Load one line header from csv.
+        
+        Return None if no header found
+        """
+        with open(path) as f:
+            headerLine = f.readline().rstrip()
+
+        if not ';' in headerLine:
+            # no header, older version
+            return
+        
+        header = {}
+        items = headerLine.split(';')
+        for item in items:
+            if item:
+                k,v = item.split('=')
+                # TODO: (cudmore) we need to know the type, for now just float
+                header[k] = v
+
+        # assign header to underlying ba
+        if self._ba is not None:
+            self._ba.fileLoader.metadata.fromDict(header, triggerDirty=False)
+
+        return header
+    
+    def _saveHeader(self, filePath : str):
+        if self._ba is None:
+            return
+
+        headerStr = self._ba.fileLoader.metadata.getHeader()
+        headerStr += '\n'
+
+        with open(filePath, 'w') as file:
+            file.write(headerStr)
 
     def loadAnalysis(self):
         """Load corresponding csv from python radon analysis
@@ -435,10 +491,22 @@ class kymFlowFile():
         csvFileName = self.getFileName()
         csvFileName = os.path.splitext(csvFileName)[0] + '.csv'
         loadFilePath = os.path.join(loadPath, csvFileName)
-        if os.path.isfile(loadFilePath):
-            self._df = pd.read_csv(loadFilePath)
-        else:
+        if not os.path.isfile(loadFilePath):
             logger.info(f'no analysis to load: {loadFilePath}')
+            return
+        
+        # 202309, we are now saving a one line header
+        # load first line and if it has '=' and ';' it is a header
+        headerLine = self._loadHeader(loadFilePath)
+        if headerLine is None:
+            header = 0
+        else:
+            header = 1
+
+        self._df = pd.read_csv(loadFilePath, header=header)
+
+        if 'Unnamed: 0' in self._df.columns:
+            self._df = self._df.drop(columns=['Unnamed: 0'])
 
     def loadMatlabAnalysis(self):
         csvFile = analyzeflow.kymFlowUtil._getCsvFile(self._tifPath)

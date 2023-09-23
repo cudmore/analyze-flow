@@ -340,6 +340,29 @@ def old_analyzeOne(tifPath):
 
     return df
 
+def batchAnalyzeFolderList(dataPath : str):
+    """Batch analyzed all tif file in a folder and its subfolders.
+    
+    Parameters
+    ==========
+    dataPath : str
+        Source folder.
+    """
+    dateFolders = []
+    for item in os.listdir(dataPath):
+        oneItemPath = os.path.join(dataPath, item)
+        if os.path.isdir(oneItemPath):
+            dateFolders.append(oneItemPath)
+
+    dateFolders = sorted(dateFolders)  # important to get date order
+
+    numAnalyzed = 0
+    for oneFolder in dateFolders:
+        logger.info(f'=== running analysis on folder: {oneFolder}')
+        numAnalyzed += batchAnalyzeFolder(oneFolder)
+
+    print(f'done analyzing {len(dateFolders)} folders with {numAnalyzed} tif files.')
+
 def batchAnalyzeFolder(folderPath) -> int:
     """Analyze a folder of tif with mpRadon and save all analysis (one line per line scan).
     
@@ -383,6 +406,10 @@ def batchAnalyzeFolder(folderPath) -> int:
     return numTif
 
 if __name__ == '__main__':
+    path = '/media/cudmore/data/Dropbox/data/declan/data'
+    batchAnalyzeFolderList(path)
+    sys.exit(1)
+
     # this one has >>sd in flow, try and figure out variance
     import analyzeflow
     tifPath = '/Users/cudmore/Dropbox/data/declan/20221202/Capillary8.tif'

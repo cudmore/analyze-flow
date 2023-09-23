@@ -15,7 +15,7 @@ git clone git@github.com:cudmore/analyze-flow.git
 2) Create a conda environment
 
 ```
-conda create -y -n flow-env python=3.9
+conda create -y -n flow-env python=3.11
 ```
 
 3) Activate conda environment
